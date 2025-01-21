@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+apply from: 'version.gradle'
+
+group = "fr.vengelis"
+version = loadVersion().getVersion()
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+
+}
+
+
+compileJava.getOptions().setEncoding("UTF-8")

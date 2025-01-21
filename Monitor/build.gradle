@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+apply from: 'version.gradle'
+
+group = "fr.vengelis"
+version = loadVersion().getVersion()
+mainClassName = 'fr.vengelis.propergol.monitor.Monitor'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(path: ':Core')
+}
+
+compileJava.getOptions().setEncoding("UTF-8")
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+    manifest {
+        attributes["Main-Class"] = mainClassName
+    }
+}
+
+application {
+    getMainClass().set(mainClassName)
+}
