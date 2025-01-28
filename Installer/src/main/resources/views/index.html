@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Micronaut MVC Example</title>
+</head>
+<body>
+<!-- Inclusion du header -->
+<div th:replace="~{header}"></div>
+
+<div id="content">
+    <button id="actionButton">Click Me</button>
+    <div id="message"></div>
+</div>
+
+<div th:replace="~{scripts/_clickButtons}"></div>
+
+<!-- Inclusion du footer -->
+<div th:replace="~{footer}"></div>
+</body>
+</html>

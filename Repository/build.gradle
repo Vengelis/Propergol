@@ -15,19 +15,22 @@ repositories {
 }
 
 dependencies {
+    implementation project(path: ':API')
     implementation project(path: ':Core')
 }
 
 compileJava.getOptions().setEncoding("UTF-8")
 
-
-tasks.withType(JavaCompile) {
-	options.encoding = 'UTF-8'
-    manifest {
-        attributes["Main-Class"] = mainClassName
-    }
-}
-
 application {
     getMainClass().set(mainClassName)
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+    mergeServiceFiles()
+//    from('src/main/resources') {
+//        into('resources')
+//    }
 }

@@ -1,0 +1,7 @@
+# Plugin's system
+plugin-manager-loading: "Loading plugins ..."
+plugin-manager-loading-end: "All plugins was loaded."
+plugin-loading: "Loading Plugin : %s"
+plugin-enabling: "Enabling Plugin : %s"
+plugin-disabling: "Disabling Plugin : %s"
+plugin-reloading: "Reloading Plugin : %s"

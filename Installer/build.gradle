@@ -5,14 +5,14 @@ plugins {
 }
 
 micronaut {
-    version = '3.6.0'  // Définir la version de Micronaut ici
+    version = '3.6.0'
 }
 
 apply from: 'version.gradle'
 
 group = "fr.vengelis"
 version = loadVersion().getVersion()
-mainClassName = 'fr.vengelis.propergol.monitor.Monitor'
+mainClassName = 'fr.vengelis.propergol.installer.Installer'
 
 repositories {
     mavenLocal()

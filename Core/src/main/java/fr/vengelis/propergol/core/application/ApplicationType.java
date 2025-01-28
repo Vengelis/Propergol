@@ -1,4 +1,4 @@
-package fr.vengelis.propergol.api.app;
+package fr.vengelis.propergol.core.application;
 
 public enum ApplicationType {
 

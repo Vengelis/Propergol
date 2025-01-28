@@ -5,7 +5,7 @@
  * Project: Lunatrix
  */
 
-package fr.vengelis.propergol.api.utils;
+package fr.vengelis.propergol.core.utils;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class ConsoleLogger {
             return "  INFO  ";
         } else if (level.equals(CONFIG)) {
             return " CONFIG ";
-        } else if (level.equals(FINE)) {
+        } else if (level.equals(FINE) || level.equals(FINEST)) {
             return "VERBOSE ";
         } else if (level.equals(FINER)) {
             return "  LOG   ";
@@ -38,12 +38,6 @@ public class ConsoleLogger {
             return " NOLOG  ";
         }
         return "        ";
-    }
-
-    public static void printVerbose(Level level, String message) {
-        if(VERBOSE) {
-            ConsoleLogger.printLine(FINE, message);
-        }
     }
 
     public static String getLog(Level level, String message) {
@@ -60,6 +54,7 @@ public class ConsoleLogger {
 
     public static void printLine(Level level, String message) {
         if(!level.equals(Level.FINEST)) System.out.println(getCurrentTime(level) + message);
+        else if(level.equals(Level.FINEST) && VERBOSE) System.out.println(getCurrentTime(level) + message);
     }
 
     public static void printLines(Level level, String[] messages) {

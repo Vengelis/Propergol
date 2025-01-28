@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(path: ':API')
     implementation project(path: ':Core')
 }
 

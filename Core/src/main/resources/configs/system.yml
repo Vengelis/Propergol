@@ -1,0 +1,21 @@
+system:
+
+  version: 1
+  ready: false
+
+  lang: en_US
+  verbose: true
+
+  communication:
+    # Système d'autoconfiguration des nouveaux slaves qui se connectent au repo pour la première fois
+    deployer:
+      host: localhost
+      port: 8080
+
+    # système de communication entre les app
+    redis:
+      host: localhost
+      port: 6379
+      user: default
+      password: password
+      database: 0

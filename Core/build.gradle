@@ -18,10 +18,6 @@ dependencies {
     implementation(group: 'com.google.code.gson', name: 'gson', version: '2.8.8')
     implementation (group: 'redis.clients', name: 'jedis', version: '5.0.0')
     implementation(group: 'org.apache.commons', name: 'commons-io', version: '1.3.2')
-    implementation(group: 'org.springframework', name: 'spring-context', version: '5.2.8.RELEASE')
-    implementation(group: 'org.springframework', name: 'spring-web', version: '5.2.8.RELEASE')
-    implementation(group: 'org.springframework', name: 'spring-core', version: '5.2.8.RELEASE')
-    implementation(group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.3.4.RELEASE')
 }
 
 compileJava.getOptions().setEncoding("UTF-8")
