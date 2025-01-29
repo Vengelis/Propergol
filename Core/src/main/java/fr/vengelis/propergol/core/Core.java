@@ -2,6 +2,9 @@ package fr.vengelis.propergol.core;
 
 import fr.vengelis.propergol.api.API;
 import fr.vengelis.propergol.core.application.ApplicationType;
+import fr.vengelis.propergol.core.communication.redis.RedisCommunicationSystem;
+import fr.vengelis.propergol.core.communication.redis.RedisConnection;
+import fr.vengelis.propergol.core.communication.redis.RedisResult;
 import fr.vengelis.propergol.core.utils.ConsoleLogger;
 import fr.vengelis.propergol.core.application.booter.ArgumentManager;
 import fr.vengelis.propergol.core.application.events.EventManager;
@@ -31,6 +34,7 @@ public class Core {
     private final ResourceExporter resourceExporter = new ResourceExporter();
     private final EventManager eventManager = new EventManager();
     private YmlConfiguration systemConfig;
+    private final RedisCommunicationSystem redisCommunicationSystem = new RedisCommunicationSystem();
 
     public Core(ApplicationType applicationType) {
         instance = this;
@@ -62,7 +66,7 @@ public class Core {
         resourceExporter.createFolder(API.WORKING_AREA + File.separator + "plugins");
 
         try {
-            resourceExporter.saveResource(new File(API.WORKING_AREA), "/languages/en_US.yml", false);
+            resourceExporter.saveResource(new File(API.WORKING_AREA), "/languages/en_US.yml", true);
             resourceExporter.saveResource(new File(API.WORKING_AREA), "/configs/system.yml", true);
         } catch (IOException e) {
             ConsoleLogger.printStacktrace(e);
@@ -74,6 +78,32 @@ public class Core {
         if(ConsoleLogger.VERBOSE)
             ConsoleLogger.printLine(Level.FINEST, "Verbose mode enabled !");
 
+        if((Boolean) this.systemConfig.get("system.communication.redis.auth.enabled")) {
+            RedisConnection.create(
+                    this.systemConfig.get("system.communication.redis.host").toString(),
+                    this.systemConfig.get("system.communication.redis.auth.user").toString(),
+                    (boolean) this.systemConfig.get("system.communication.redis.auth.has-password") ?
+                            this.systemConfig.get("system.communication.redis.auth.password").toString() :
+                            null,
+                    (int) this.systemConfig.get("system.communication.redis.port"),
+                    (int) this.systemConfig.get("system.communication.redis.database"),
+                    (int) this.systemConfig.get("system.communication.redis.timeout")
+            );
+        } else {
+            RedisConnection.create(
+                    this.systemConfig.get("system.communication.redis.host").toString(),
+                    null,
+                    null,
+                    (int) this.systemConfig.get("system.communication.redis.port"),
+                    (int) this.systemConfig.get("system.communication.redis.database"),
+                    (int) this.systemConfig.get("system.communication.redis.timeout")
+            );
+        }
+        if(redisCommunicationSystem.getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS)) {
+            ConsoleLogger.printLine(Level.FINER, LanguageManager.translate("redis-op"));
+        } else {
+            ConsoleLogger.printLine(Level.FINER, LanguageManager.translate("redis-not-op"));
+        }
         LanguageManager.loadLanguagesFromPath(API.WORKING_AREA + File.separator + "languages");
         LanguageManager.setCurrentLanguage(this.systemConfig.get("system.lang").toString());
 
@@ -88,6 +118,14 @@ public class Core {
 
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    public YmlConfiguration getSystemConfig() {
+        return systemConfig;
+    }
+
+    public RedisCommunicationSystem getRedisCommunicationSystem() {
+        return redisCommunicationSystem;
     }
 
     public ApplicationType getApplicationType() {
@@ -113,7 +151,4 @@ public class Core {
         }
     }
 
-    public static void main(String[] args) {
-        (new Core(ApplicationType.CORE)).boot();
-    }
 }

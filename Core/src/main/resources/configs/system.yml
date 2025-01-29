@@ -16,6 +16,10 @@ system:
     redis:
       host: localhost
       port: 6379
-      user: default
-      password: password
+      auth:
+        enabled: false
+        user: default
+        has-password: true
+        password: password
       database: 0
+      timeout: 2000

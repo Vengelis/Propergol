@@ -5,3 +5,7 @@ plugin-loading: "Loading Plugin : %s"
 plugin-enabling: "Enabling Plugin : %s"
 plugin-disabling: "Disabling Plugin : %s"
 plugin-reloading: "Reloading Plugin : %s"
+
+# Redis system
+redis-op: "The redis connection is operational."
+redis-not-op: "The redis connection isn't operational."
