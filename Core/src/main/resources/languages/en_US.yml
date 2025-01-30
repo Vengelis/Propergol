@@ -9,3 +9,9 @@ plugin-reloading: "Reloading Plugin : %s"
 # Redis system
 redis-op: "The redis connection is operational."
 redis-not-op: "The redis connection isn't operational."
+redis-pubsub-disconnected: "PubSub lost connection with redis, it will try to reconnect later."
+redis-pubsub-reconnected: "PubSub reconnected !"
+
+# POSTGRE
+postgre-op: "The postgre connection is operationnal."
+postgre-not-op: "The postgre connection isn't operational."

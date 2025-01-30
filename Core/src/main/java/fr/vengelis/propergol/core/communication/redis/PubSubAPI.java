@@ -29,28 +29,44 @@ public class PubSubAPI {
             return new RedisResult<>(RedisResult.Type.SUCCESS);
         } catch (Exception e) {
 //            ConsoleLogger.printStacktrace(e);
-            ConsoleLogger.printLine(Level.SEVERE, e.getMessage());
+            ConsoleLogger.printLine(Level.FINEST, "Redis publish error : " + e.getMessage());
             return new RedisResult<>(RedisResult.Type.ERROR);
         }
     }
 
     public void subscribe(String channel, IPacketsReceiver receiver) {
         Thread thread = new Thread(() -> {
-            try (Jedis jedis = RedisConnection.getJedis()) {
-                jedis.subscribe(new JedisPubSub() {
-
-                    @Override
-                    public void onMessage(String channel, String message) {
-                        try {
-                            receiver.receive(channel, message);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+            boolean disconnected = false;
+            while(true) {
+                try (Jedis jedis = RedisConnection.getJedis()) {
+                    if(disconnected) {
+                        disconnected = false;
+                        ConsoleLogger.printLine(Level.INFO, LanguageManager.translate("redis-pubsub-reconnected"));
                     }
+                    jedis.subscribe(new JedisPubSub() {
+                        @Override
+                        public void onMessage(String channel, String message) {
+                            try {
+                                receiver.receive(channel, message);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
 
-                }, channel);
-            } catch (Exception e) {
-                ConsoleLogger.printStacktrace(e);
+                    }, channel);
+                } catch (Exception e) {
+//                ConsoleLogger.printStacktrace(e);
+                    if(e.getMessage().contains("Unexpected end of stream.")) {
+                        disconnected = true;
+                        ConsoleLogger.printLine(Level.SEVERE, "SUB : " + e.getMessage());
+                        ConsoleLogger.printLine(Level.SEVERE, LanguageManager.translate("redis-pubsub-disconnected"));
+                    }
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }, "sub (c = " + channel + ")");
         thread.start();
@@ -58,17 +74,34 @@ public class PubSubAPI {
 
     public void psubscribe(String pattern, IPatternReceiver receiver) {
         Thread thread = new Thread(() -> {
-            try (Jedis jedis = RedisConnection.getJedis()) {
-                jedis.psubscribe(new JedisPubSub() {
-
-                    @Override
-                    public void onPMessage(String pattern, String channel, String message) {
-                        receiver.receive(pattern, channel, message);
+            boolean disconnected = false;
+            while (true) {
+                try (Jedis jedis = RedisConnection.getJedis()) {
+                    if(disconnected) {
+                        disconnected = false;
+                        ConsoleLogger.printLine(Level.INFO, LanguageManager.translate("redis-pubsub-reconnected"));
                     }
+                    jedis.psubscribe(new JedisPubSub() {
 
-                }, pattern);
-            } catch (Exception e) {
-                ConsoleLogger.printStacktrace(e);
+                        @Override
+                        public void onPMessage(String pattern, String channel, String message) {
+                            receiver.receive(pattern, channel, message);
+                        }
+
+                    }, pattern);
+                } catch (Exception e) {
+//                ConsoleLogger.printStacktrace(e);
+                    if(e.getMessage().contains("Unexpected end of stream.")) {
+                        disconnected = true;
+                        ConsoleLogger.printLine(Level.SEVERE, "SUB : " + e.getMessage());
+                        ConsoleLogger.printLine(Level.SEVERE, LanguageManager.translate("redis-pubsub-disconnected"));
+                    }
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }, "sub (p = " + pattern + ")");
         thread.start();

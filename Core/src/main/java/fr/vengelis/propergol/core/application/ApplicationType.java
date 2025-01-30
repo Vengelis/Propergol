@@ -6,6 +6,8 @@ public enum ApplicationType {
     REPOSITORY,
     MONITOR,
     SLAVE,
+    INSTALLER,
+    WEBCONNECT,
     ;
 
 }

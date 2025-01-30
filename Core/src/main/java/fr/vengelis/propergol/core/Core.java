@@ -2,6 +2,7 @@ package fr.vengelis.propergol.core;
 
 import fr.vengelis.propergol.api.API;
 import fr.vengelis.propergol.core.application.ApplicationType;
+import fr.vengelis.propergol.core.communication.postgres.PostgreCommunicationSystem;
 import fr.vengelis.propergol.core.communication.redis.RedisCommunicationSystem;
 import fr.vengelis.propergol.core.communication.redis.RedisConnection;
 import fr.vengelis.propergol.core.communication.redis.RedisResult;
@@ -35,6 +36,7 @@ public class Core {
     private final EventManager eventManager = new EventManager();
     private YmlConfiguration systemConfig;
     private final RedisCommunicationSystem redisCommunicationSystem = new RedisCommunicationSystem();
+    private PostgreCommunicationSystem postgreCommunicationSystem;
 
     public Core(ApplicationType applicationType) {
         instance = this;
@@ -72,8 +74,11 @@ public class Core {
             ConsoleLogger.printStacktrace(e);
             System.exit(1);
         }
-
         this.systemConfig = new YmlConfiguration(Paths.get(API.WORKING_AREA,"configs", "system.yml"));
+
+        LanguageManager.loadLanguagesFromPath(API.WORKING_AREA + File.separator + "languages");
+        LanguageManager.setCurrentLanguage(this.systemConfig.get("system.lang").toString());
+
         ConsoleLogger.VERBOSE = (Boolean) this.systemConfig.get("system.verbose");
         if(ConsoleLogger.VERBOSE)
             ConsoleLogger.printLine(Level.FINEST, "Verbose mode enabled !");
@@ -99,14 +104,27 @@ public class Core {
                     (int) this.systemConfig.get("system.communication.redis.timeout")
             );
         }
+        redisCommunicationSystem.boot();
         if(redisCommunicationSystem.getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS)) {
             ConsoleLogger.printLine(Level.FINER, LanguageManager.translate("redis-op"));
         } else {
             ConsoleLogger.printLine(Level.FINER, LanguageManager.translate("redis-not-op"));
         }
-        LanguageManager.loadLanguagesFromPath(API.WORKING_AREA + File.separator + "languages");
-        LanguageManager.setCurrentLanguage(this.systemConfig.get("system.lang").toString());
 
+        if(applicationType.equals(ApplicationType.REPOSITORY)) {
+            try {
+                postgreCommunicationSystem = PostgreCommunicationSystem.create(
+                        this.systemConfig.get("system.communication.postgre.host").toString(),
+                        this.systemConfig.get("system.communication.postgre.user").toString(),
+                        this.systemConfig.get("system.communication.postgre.password").toString(),
+                        this.systemConfig.get("system.communication.postgre.database").toString(),
+                        (int) this.systemConfig.get("system.communication.postgre.port")
+                );
+            } catch (Exception e) {
+                ConsoleLogger.printStacktrace(e);
+                ConsoleLogger.printLineBox(Level.SEVERE, "");
+            }
+        }
         HandlerRecorder.get().executeBoot(BootHandler.Step.BEFORE_PLUGINS);
         pluginManager.loadPlugins();
         HandlerRecorder.get().executeBoot(BootHandler.Step.AFTER_PLUGINS);
@@ -126,6 +144,10 @@ public class Core {
 
     public RedisCommunicationSystem getRedisCommunicationSystem() {
         return redisCommunicationSystem;
+    }
+
+    public PostgreCommunicationSystem getPostgreCommunicationSystem() {
+        return postgreCommunicationSystem;
     }
 
     public ApplicationType getApplicationType() {

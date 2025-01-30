@@ -6,12 +6,14 @@ import fr.vengelis.propergol.core.communication.InstructionResponse;
 import fr.vengelis.propergol.core.communication.redis.instruction.KeyValueInstruction;
 import fr.vengelis.propergol.core.communication.redis.instruction.KeyValueIntegerInstruction;
 import fr.vengelis.propergol.core.communication.redis.instruction.PublishInstruction;
+import fr.vengelis.propergol.core.communication.redis.task.RedisTaskManager;
 import fr.vengelis.propergol.core.communication.retention.RetainedInstruction;
 import fr.vengelis.propergol.core.communication.retention.Retention;
 
 public class RedisCommunicationSystem extends CommunicationSystem {
 
     private final PubSubAPI pubSubAPI = new PubSubAPI();
+    private final RedisTaskManager redisTaskManager = new RedisTaskManager();
 
     public RedisCommunicationSystem() {
         super(System.REDIS);
@@ -19,6 +21,14 @@ public class RedisCommunicationSystem extends CommunicationSystem {
 
     public PubSubAPI getPubSubAPI() {
         return pubSubAPI;
+    }
+
+    public void boot() {
+        pubSubAPI.psubscribe("*", ((pattern,channel,message) -> {
+            redisTaskManager.getRedisTasks().stream()
+                    .filter(redisTask -> redisTask.getChannel().equalsIgnoreCase(channel))
+                    .forEach(redisTask -> redisTask.run(message));
+        }));
     }
 
     @Override
@@ -66,18 +76,20 @@ public class RedisCommunicationSystem extends CommunicationSystem {
         return null;
     }
 
-    private <I> InstructionResponse<String> sendToRetainedService(InstructionRequest<I> request) {
-        if(request.getRetention().equals(Retention.OBLIGATORY)) {
-            RetainedInstruction<I> retainedInstruction =
-                    new RetainedInstruction<>(request.getRetention(), request);
-            registerIntoReteined(retainedInstruction);
-            return new InstructionResponse<String>(InstructionResponse.SystemResult.RETAINED,
-                    "Instruction was placed in retention service, it will be sent as soon " +
-                            "as the connection is reestablished");
-        } else {
-            return new InstructionResponse<String>(InstructionResponse.SystemResult.FORGOTTEN,
-                    "Communication with the redis service is not available, " +
-                            "the request has been abandoned");
-        }
+    @Override
+    protected void reconnect() {
+        RedisConnection.reconnect();
     }
+
+    @Override
+    protected boolean isReconnected() {
+        return getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS);
+    }
+
+    @Override
+    protected boolean tryHelloWorldSuccess() {
+        return pubSubAPI.tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS);
+    }
+
+
 }

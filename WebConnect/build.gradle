@@ -1,0 +1,61 @@
+plugins {
+    id 'java'
+    id 'io.micronaut.application' version '3.6.0'
+    id 'application'
+}
+
+micronaut {
+    version = '3.6.0'  // Définir la version de Micronaut ici
+}
+
+apply from: 'version.gradle'
+
+group = "fr.vengelis"
+version = loadVersion().getVersion()
+mainClassName = 'fr.vengelis.propergol.webconnect.WebConnect'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(path: ':API')
+    implementation project(path: ':Core')
+    implementation 'io.micronaut:micronaut-runtime'
+    implementation 'io.micronaut:micronaut-http-server-netty'
+    implementation 'io.micronaut:micronaut-inject'
+    implementation 'io.micronaut:micronaut-router'
+    implementation 'io.micronaut.views:micronaut-views-thymeleaf'
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
+    implementation 'org.webjars:jquery:3.6.0'
+}
+
+compileJava.getOptions().setEncoding("UTF-8")
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+    manifest {
+        attributes["Main-Class"] = mainClassName
+    }
+}
+
+application {
+    getMainClass().set(mainClassName)
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+    mergeServiceFiles()
+//    from('src/main/resources') {
+//        into('resources')
+//    }
+}

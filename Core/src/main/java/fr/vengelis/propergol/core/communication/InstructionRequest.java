@@ -5,6 +5,7 @@ import fr.vengelis.propergol.core.communication.retention.Retention;
 public class InstructionRequest<T> {
 
     public enum Handler {
+        POSTGRE,
         REDIS,
         DEPLOYER,
         ;

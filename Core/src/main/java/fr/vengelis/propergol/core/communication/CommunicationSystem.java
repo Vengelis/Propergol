@@ -1,9 +1,7 @@
 package fr.vengelis.propergol.core.communication;
 
-import fr.vengelis.propergol.core.Core;
-import fr.vengelis.propergol.core.communication.redis.RedisConnection;
-import fr.vengelis.propergol.core.communication.redis.RedisResult;
 import fr.vengelis.propergol.core.communication.retention.RetainedInstruction;
+import fr.vengelis.propergol.core.communication.retention.Retention;
 import fr.vengelis.propergol.core.utils.ConsoleLogger;
 
 import java.util.ArrayDeque;
@@ -12,6 +10,7 @@ import java.util.logging.Level;
 public abstract class CommunicationSystem {
 
     public enum System {
+        POSTGRE,
         REDIS,
         DEPLOYER,
         ;
@@ -48,12 +47,33 @@ public abstract class CommunicationSystem {
 
     public abstract InstructionResponse send(InstructionRequest<?> request);
 
-    protected void registerIntoReteined(RetainedInstruction<?> instruction) {
+    protected void registerIntoRetained(RetainedInstruction<?> instruction) {
         retainedInstructions.addLast(instruction);
     }
 
     public ArrayDeque<RetainedInstruction<?>> getRetainedInstructions() {
         return retainedInstructions;
+    }
+
+    protected abstract void reconnect();
+    protected abstract boolean isReconnected();
+    protected abstract boolean tryHelloWorldSuccess();
+
+    protected abstract void boot();
+
+    protected <I> InstructionResponse<String> sendToRetainedService(InstructionRequest<I> request) {
+        if(request.getRetention().equals(Retention.OBLIGATORY)) {
+            RetainedInstruction<I> retainedInstruction =
+                    new RetainedInstruction<>(request.getRetention(), request);
+            registerIntoRetained(retainedInstruction);
+            return new InstructionResponse<String>(InstructionResponse.SystemResult.RETAINED,
+                    "Instruction was placed in retention service, it will be sent as soon " +
+                            "as the connection is reestablished");
+        } else {
+            return new InstructionResponse<String>(InstructionResponse.SystemResult.FORGOTTEN,
+                    "Communication with the redis service is not available, " +
+                            "the request has been abandoned");
+        }
     }
 
     private void startRetentionSystem() {
@@ -63,33 +83,29 @@ public abstract class CommunicationSystem {
                 try {
                     Thread.sleep(5000);
                     if(serviceStatus.equals(Status.LINKED)) {
-                        if(assigned.equals(System.REDIS)) {
-                            if(Core.get().getRedisCommunicationSystem().getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.ERROR)) {
-                                serviceStatus = Status.RETAINED;
-                                ConsoleLogger.printLine(Level.INFO, "Thread : passage en RETAINED");
-                            }
+                        if(!tryHelloWorldSuccess()) {
+                            ConsoleLogger.printLine(Level.INFO, "CommThread : " + serviceStatus + " -> RETAINED");
+                            serviceStatus = Status.RETAINED;
                         }
                     } else if(serviceStatus.equals(Status.RETAINED)) {
-                        if(assigned.equals(System.REDIS)) {
-                            if(Core.get().getRedisCommunicationSystem().getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS)) {
-                                serviceStatus = Status.RETAINED_TO_DATABASE;
-                                tryOne = true;
-                                ConsoleLogger.printLine(Level.INFO, "Thread : passage en RETAINED_TO_DATABASE");
-                            }
+                        if(tryHelloWorldSuccess()) {
+                            ConsoleLogger.printLine(Level.INFO, "CommThread : " + serviceStatus + " -> RETAINED_TO_DATABASE");
+                            serviceStatus = Status.RETAINED_TO_DATABASE;
+                            tryOne = true;
                         }
                     }
 
                     if(serviceStatus.equals(Status.RETAINED_TO_DATABASE)){
                         if(tryOne) {
-                            RedisConnection.reconnect();
-                            ConsoleLogger.printLine(Level.INFO, "Thread : redis reconnection...");
-                            if(Core.get().getRedisCommunicationSystem().getPubSubAPI().tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS)) {
+                            ConsoleLogger.printLine(Level.INFO, "CommThread : " + assigned.name() + " reconnection...");
+                            reconnect();
+                            if (isReconnected()) {
                                 tryOne = false;
-                                ConsoleLogger.printLine(Level.INFO, "Thread : redis connected !");
+                                ConsoleLogger.printLine(Level.INFO, "CommThread : " + assigned.name() + " connected !");
 
                                 int size = retainedInstructions.size();
-                                ConsoleLogger.printLine(Level.INFO, "Thread : instructions en attente : " + size);
-                                for(int i = 0; i < size; i++) {
+                                ConsoleLogger.printLine(Level.INFO, "CommThread : waiting instructions : " + size);
+                                for (int i = 0; i < size; i++) {
                                     RetainedInstruction<?> instructionRequest = retainedInstructions.poll();
                                     InstructionRequest<?> newInstruction = instructionRequest.getInstructionRequest();
                                     ConsoleLogger.printLine(Level.INFO, "Try resending : " +
@@ -97,20 +113,20 @@ public abstract class CommunicationSystem {
                                             newInstruction.getService().name() + "|" +
                                             newInstruction.getData().toString());
                                     InstructionResponse<String> rep = send(newInstruction);
-                                    if(rep.getSystemResult().equals(InstructionResponse.SystemResult.RETAINED)) {
+                                    if (rep.getSystemResult().equals(InstructionResponse.SystemResult.RETAINED)) {
                                         tryOne = true;
                                     }
                                     ConsoleLogger.printLine(Level.INFO, "Resended result : " + rep.getSystemResult().name() + " : " + rep.getResult().get());
                                 }
                             } else {
-                                ConsoleLogger.printLine(Level.INFO, "Thread : redis not connected !");
+                                ConsoleLogger.printLine(Level.INFO, "CommThread : " + assigned.name() + " not reconnected !");
                             }
+
                         }
 
-
                         if(retainedInstructions.isEmpty()) {
+                            ConsoleLogger.printLine(Level.INFO, "CommThread : " + serviceStatus + " -> LINKED");
                             serviceStatus = Status.LINKED;
-                            ConsoleLogger.printLine(Level.INFO, "Thread : passage en LINKED");
                         }
 
                     }
@@ -120,4 +136,6 @@ public abstract class CommunicationSystem {
             }
         }).start();
     }
+
+
 }

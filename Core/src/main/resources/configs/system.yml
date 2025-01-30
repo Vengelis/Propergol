@@ -11,6 +11,7 @@ system:
     deployer:
       host: localhost
       port: 8080
+      password: propergol
 
     # système de communication entre les app
     redis:
@@ -23,3 +24,11 @@ system:
         password: password
       database: 0
       timeout: 2000
+
+    # système de stockage permanent
+    postgre:
+      host: localhost
+      port: 5432
+      user: postgres
+      password: postgres
+      database: propergol
