@@ -84,16 +84,23 @@ public class PostgreCommunicationSystem extends CommunicationSystem {
         try {
             if (request.getService() instanceof PostgreService service) {
                 switch (service) {
-
-                    // TODO : Faire la sauvegarde de la requete vers le service de retention si ça fail !
-
                     case QUERY -> {
-                        Object result = DatabaseExecutor.executeQuery(this, (QueryExecutor<?>) request.getData());
-                        return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, result);
+                        try {
+                            Object result = DatabaseExecutor.executeQuery(this, (QueryExecutor<?>) request.getData());
+                            return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, result);
+                        } catch (Exception e) {
+                            return sendToRetainedService(request);
+                        }
+
                     }
                     case VOID_QUERY -> {
-                        DatabaseExecutor.executeVoidQuery(this, (QueryVoidExecutor) request.getData());
-                        return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Executed successfully");
+                        try {
+                            DatabaseExecutor.executeVoidQuery(this, (QueryVoidExecutor) request.getData());
+                            return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Executed successfully");
+                        } catch (Exception e) {
+                            return sendToRetainedService(request);
+                        }
+
                     }
                     default -> throw new IllegalArgumentException("Unsupported PostgreSQL service");
                 }
