@@ -72,7 +72,7 @@ public class RedisConnection {
         }
     }
 
-    public static RedisResult<Object> get(String key) {
+    public static RedisResult<String> get(String key) {
         try(Jedis jedis = RedisConnection.getJedis()) {
             return new RedisResult<>(RedisResult.Type.SUCCESS, jedis.get(key));
         } catch (Exception e) {

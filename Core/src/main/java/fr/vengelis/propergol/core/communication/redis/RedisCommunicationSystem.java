@@ -10,6 +10,8 @@ import fr.vengelis.propergol.core.communication.redis.task.RedisTaskManager;
 import fr.vengelis.propergol.core.communication.retention.RetainedInstruction;
 import fr.vengelis.propergol.core.communication.retention.Retention;
 
+import java.util.Set;
+
 public class RedisCommunicationSystem extends CommunicationSystem {
 
     private final PubSubAPI pubSubAPI = new PubSubAPI();
@@ -37,12 +39,11 @@ public class RedisCommunicationSystem extends CommunicationSystem {
         if(getServiceStatus().equals(Status.RETAINED))
             return sendToRetainedService(request);
 
-        // TODO : Finir les requetes
         switch ((RedisService) request.getService()) {
             case PUBLISH -> {
                 PublishInstruction instruction = (PublishInstruction) request.getData();
                 if(pubSubAPI.publish(instruction).getType().equals(RedisResult.Type.SUCCESS)) {
-                    return new InstructionResponse<String>(InstructionResponse.SystemResult.SENDED,
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED,
                             "Instruction sended to redis. Channel : " + instruction.channel() +
                                     " | Message : " + instruction.message());
                 } else {
@@ -52,7 +53,7 @@ public class RedisCommunicationSystem extends CommunicationSystem {
             case SET -> {
                 KeyValueInstruction<String> instruction = (KeyValueInstruction<String>) request.getData();
                 if(RedisConnection.set(instruction.key(), instruction.value()).getType().equals(RedisResult.Type.SUCCESS)) {
-                    return new InstructionResponse<String>(InstructionResponse.SystemResult.SENDED, "Sended");
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Sended");
                 } else {
                     return sendToRetainedService(request);
                 }
@@ -60,7 +61,7 @@ public class RedisCommunicationSystem extends CommunicationSystem {
             case SETEX -> {
                 KeyValueIntegerInstruction<String> instruction = (KeyValueIntegerInstruction<String>) request.getData();
                 if(RedisConnection.set(instruction.key(), instruction.value(), instruction.integer()).getType().equals(RedisResult.Type.SUCCESS)) {
-                    return new InstructionResponse<String>(InstructionResponse.SystemResult.SENDED, "Sended");
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Sended");
                 } else {
                     return sendToRetainedService(request);
                 }
@@ -68,9 +69,41 @@ public class RedisCommunicationSystem extends CommunicationSystem {
             case DEL -> {
                 String key = request.getData().toString();
                 if(RedisConnection.del(key).getType().equals(RedisResult.Type.SUCCESS))
-                    return new InstructionResponse<String>(InstructionResponse.SystemResult.SENDED, "Sended");
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Sended");
                 else
                     return sendToRetainedService(request);
+            }
+            case GET -> {
+                String key = request.getData().toString();
+                RedisResult<String> rtn = RedisConnection.get(key);
+                if(rtn.getType().equals(RedisResult.Type.SUCCESS))
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, rtn);
+                else
+                    return sendToRetainedService(request);
+            }
+            case EX -> {
+                KeyValueInstruction<Integer> instruction = (KeyValueInstruction<Integer>) request.getData();
+                if(RedisConnection.expire(instruction.key(), instruction.value()).getType().equals(RedisResult.Type.SUCCESS)) {
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Sended");
+                } else {
+                    return sendToRetainedService(request);
+                }
+            }
+            case GETKEYS -> {
+                String key = request.getData().toString();
+                RedisResult<Set<String>> rtn = RedisConnection.getKeys(key);
+                if(rtn.getType().equals(RedisResult.Type.SUCCESS))
+                    return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, rtn);
+                else
+                    return sendToRetainedService(request);
+            }
+            case RECONNECT -> {
+                reconnect();
+                return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Sended");
+            }
+            case CLOSE -> {
+                RedisConnection.close();
+                return new InstructionResponse<>(InstructionResponse.SystemResult.SENDED, "Connection closed");
             }
         }
         return null;
