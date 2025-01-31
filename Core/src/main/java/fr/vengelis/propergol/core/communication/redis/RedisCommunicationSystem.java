@@ -124,5 +124,7 @@ public class RedisCommunicationSystem extends CommunicationSystem {
         return pubSubAPI.tryHelloWorld().getType().equals(RedisResult.Type.SUCCESS);
     }
 
-
+    public RedisTaskManager getRedisTaskManager() {
+        return redisTaskManager;
+    }
 }

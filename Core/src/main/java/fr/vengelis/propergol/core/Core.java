@@ -2,6 +2,7 @@ package fr.vengelis.propergol.core;
 
 import fr.vengelis.propergol.api.API;
 import fr.vengelis.propergol.core.application.ApplicationType;
+import fr.vengelis.propergol.core.application.groups.GroupManager;
 import fr.vengelis.propergol.core.communication.postgres.PostgreCommunicationSystem;
 import fr.vengelis.propergol.core.communication.redis.RedisCommunicationSystem;
 import fr.vengelis.propergol.core.communication.redis.RedisConnection;
@@ -37,6 +38,8 @@ public class Core {
     private YmlConfiguration systemConfig;
     private final RedisCommunicationSystem redisCommunicationSystem = new RedisCommunicationSystem();
     private PostgreCommunicationSystem postgreCommunicationSystem;
+
+    private final GroupManager groupManager = new GroupManager();
 
     public Core(ApplicationType applicationType) {
         instance = this;
@@ -152,6 +155,10 @@ public class Core {
 
     public ApplicationType getApplicationType() {
         return applicationType;
+    }
+
+    public GroupManager getGroupManager() {
+        return groupManager;
     }
 
     public static Core get() {

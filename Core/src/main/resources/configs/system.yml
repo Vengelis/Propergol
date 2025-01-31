@@ -7,12 +7,6 @@ system:
   verbose: true
 
   communication:
-    # Système d'autoconfiguration des nouveaux slaves qui se connectent au repo pour la première fois
-    deployer:
-      host: localhost
-      port: 8080
-      password: propergol
-
     # système de communication entre les app
     redis:
       host: localhost

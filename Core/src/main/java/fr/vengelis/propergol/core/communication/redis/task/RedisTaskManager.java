@@ -6,17 +6,17 @@ import java.util.List;
 
 public class RedisTaskManager {
 
-    private final List<AbstractRedisTask> redisTasks = new ArrayList<>();
+    private final List<RedisTask> redisTasks = new ArrayList<>();
 
-    public List<AbstractRedisTask> getRedisTasks() {
+    public List<RedisTask> getRedisTasks() {
         return redisTasks;
     }
 
-    public void register(AbstractRedisTask task) {
+    public void register(RedisTask task) {
         redisTasks.add(task);
     }
 
-    public void register(AbstractRedisTask... tasks) {
+    public void register(RedisTask... tasks) {
         redisTasks.addAll(Arrays.asList(tasks));
     }
 

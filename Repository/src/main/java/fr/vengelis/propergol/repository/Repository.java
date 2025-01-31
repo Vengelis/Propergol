@@ -24,7 +24,7 @@ public class Repository {
 
         new Thread(() -> {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(6000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

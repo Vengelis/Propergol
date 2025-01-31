@@ -1,10 +1,10 @@
 package fr.vengelis.propergol.core.communication.redis.task;
 
-public abstract class AbstractRedisTask {
+public abstract class RedisTask {
 
     private final String channel;
 
-    public AbstractRedisTask(String channel) {
+    public RedisTask(String channel) {
         this.channel = channel;
     }
 
